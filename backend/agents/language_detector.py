@@ -3,9 +3,7 @@ Language detection agent using Agno.
 Explicitly configured with Qubrid GPT-OSS-20B model.
 """
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
-from backend.llm import detect_language
-import os
+from backend.llm.agno_qubrid_model import QubridModel
 
 
 def create_language_detection_agent() -> Agent:
@@ -18,11 +16,9 @@ def create_language_detection_agent() -> Agent:
     Returns:
         Configured Agno Agent
     """
-    # Explicit Qubrid model configuration
-    qubrid_model = OpenAIChat(
+    # Use custom Qubrid model wrapper
+    qubrid_model = QubridModel(
         id="openai/gpt-oss-20b",
-        api_key=os.getenv("QUBRID_API_KEY"),
-        base_url=os.getenv("QUBRID_CHAT_URL"),
     )
     
     return Agent(
@@ -30,19 +26,13 @@ def create_language_detection_agent() -> Agent:
         model=qubrid_model,
         instructions=[
             "You are a language detection specialist.",
-            "When given text, you must detect its language.",
-            "Call the detect_language function with the provided text.",
-            "Return only the detected language name.",
+            "Identify the language of the given text.",
+            "Return ONLY the language name (e.g., 'English', 'Spanish', 'French').",
+            "Do not provide explanations or additional information.",
         ],
-        markdown=True,
+        markdown=False,
+        debug_mode=True,  # Enable Agno execution logs
+        stream=True,  # Enable streaming for proper response handling
     )
 
-
-def detect_language_function(text: str) -> str:
-    """
-    Function that Agno agent will call for language detection.
-    Wraps the infrastructure layer's detect_language.
-    """
-    result = detect_language(text)
-    return f"Language: {result['source_language']}, Multilingual: {result['is_multilingual']}"
 

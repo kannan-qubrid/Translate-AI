@@ -3,9 +3,7 @@ Translation agent using Agno.
 Explicitly configured with Qubrid GPT-OSS-20B model.
 """
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
-from backend.llm import translate_text
-import os
+from backend.llm.agno_qubrid_model import QubridModel
 
 
 def create_translation_agent() -> Agent:
@@ -18,31 +16,24 @@ def create_translation_agent() -> Agent:
     Returns:
         Configured Agno Agent
     """
-    # Explicit Qubrid model configuration
-    qubrid_model = OpenAIChat(
+    # Use custom Qubrid model wrapper
+    qubrid_model = QubridModel(
         id="openai/gpt-oss-20b",
-        api_key=os.getenv("QUBRID_API_KEY"),
-        base_url=os.getenv("QUBRID_CHAT_URL"),
     )
     
     return Agent(
         name="Translation Specialist",
         model=qubrid_model,
         instructions=[
-            "You are a translation specialist.",
-            "When given text and a target language, you must translate the text.",
-            "Call the translate_text function with the text and target language.",
-            "Return only the translated text.",
+            "You are a professional translator.",
+            "Translate the given text to the specified target language.",
+            "Return ONLY the translated text.",
+            "Preserve the original meaning and tone.",
+            "Do not add explanations or notes.",
         ],
-        markdown=True,
+        markdown=False,
+        debug_mode=True,  # Enable Agno execution logs
+        stream=True,  # Enable streaming for proper response handling
     )
 
-
-def translate_text_function(text: str, target_language: str) -> str:
-    """
-    Function that Agno agent will call for translation.
-    Wraps the infrastructure layer's translate_text.
-    """
-    result = translate_text(text, target_language)
-    return result["translated_text"]
 
