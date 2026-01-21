@@ -1,23 +1,27 @@
 """
-Streamlit UI for translation chatbot.
+Streamlit UI for Translate AI.
 Simplified workflow: Upload → Select Language → Translate → Display
 """
 import streamlit as st
 import base64
 from backend.ocr import extract_text_from_image
 from backend.pipeline import TranslationPipeline
-from backend.db import init_db, save_message, get_chat_history, get_all_chat_ids, delete_chat
-from frontend.ui_components import render_sidebar
+from frontend.ui_components import (
+    render_header,
+    render_upload_section,
+    render_translation_settings,
+    render_translation_results
+)
 
-# Initialize database
-init_db()
+
 
 # Page configuration
 st.set_page_config(
-    page_title="Translation Chatbot",
-    page_icon="🌍",
+    page_title="Translate AI",
+    page_icon="frontend/assets/qubrid_logo.png",
     layout="wide"
 )
+
 
 def encode_image(uploaded_file) -> str:
     """Convert uploaded file to base64 data URI."""
@@ -29,41 +33,17 @@ def encode_image(uploaded_file) -> str:
 
 def main():
     """Main application logic."""
-    st.title("🌍 Translation Chatbot")
-    st.markdown("Upload an image with text, select a target language, and get instant translation!")
-    
-    # Initialize session state
-    if "active_chat_id" not in st.session_state:
-        st.session_state.active_chat_id = None
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    
-    # Render sidebar
-    render_sidebar()
+    # Render header
+    render_header()
     
     # Main content area
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader("📤 Upload Image")
-        uploaded_file = st.file_uploader(
-            "Choose an image with text",
-            type=["png", "jpg", "jpeg"],
-            help="Upload an image containing text to translate"
-        )
-        
-        if uploaded_file:
-            st.image(uploaded_file, caption="Uploaded Image", width="stretch")
+        uploaded_file = render_upload_section()
     
     with col2:
-        st.subheader("🎯 Translation Settings")
-        target_lang = st.selectbox(
-            "Target Language",
-            ["Spanish", "French", "German", "Chinese", "Japanese", "Hindi", "Arabic"],
-            help="Select the language to translate to"
-        )
-        
-        translate_button = st.button("🚀 Translate", type="primary", width="stretch")
+        target_lang, translate_button = render_translation_settings()
     
     # Translation workflow
     if uploaded_file and translate_button:
@@ -92,31 +72,14 @@ def main():
                     return
                 
                 # Step 4: Display Results
-                st.success("✅ Translation Complete!")
+                render_translation_results(
+                    extracted_text=extracted_text,
+                    detected_language=translation_result.get("detected_language", "Processing..."),
+                    translated_text=translation_result["translated_text"],
+                    target_lang=target_lang
+                )
                 
-                st.markdown("---")
-                
-                # Display extracted text
-                st.markdown("### 📝 Extracted Text")
-                st.info(extracted_text)
-                
-                # Display detected language
-                st.markdown("### 🔍 Detected Language")
-                st.write(translation_result.get("detected_language", "Processing..."))
-                
-                # Display translation
-                st.markdown(f"### 🌍 Translation ({target_lang})")
-                st.success(translation_result["translated_text"])
-                
-                # Save to database
-                if st.session_state.active_chat_id:
-                    user_message = f"Image uploaded for translation to {target_lang}"
-                    assistant_message = (
-                        f"**Extracted Text:**\n{extracted_text}\n\n"
-                        f"**Translation ({target_lang}):**\n{translation_result['translated_text']}"
-                    )
-                    save_message(st.session_state.active_chat_id, "user", user_message)
-                    save_message(st.session_state.active_chat_id, "assistant", assistant_message)
+
                 
             except Exception as e:
                 st.error(f"❌ An error occurred: {str(e)}")

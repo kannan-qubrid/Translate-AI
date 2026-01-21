@@ -1,4 +1,4 @@
-"""LLM module for language detection and translation."""
-from .qubrid_client import detect_language, translate_text
+"""LLM module for Agno-based language detection and translation."""
+from .agno_qubrid_model import QubridModel
 
-__all__ = ["detect_language", "translate_text"]
+__all__ = ["QubridModel"]
